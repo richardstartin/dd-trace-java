@@ -53,14 +53,17 @@ public class ContextPayload {
   public static class ExtractAdapter implements AgentPropagation.ContextVisitor<ContextPayload> {
 
     @Override
-    public void forEachKey(ContextPayload carrier,
-                           AgentPropagation.KeyClassifier classifier,
-                           AgentPropagation.KeyValueConsumer consumer) {
+    public void forEachKey(
+        ContextPayload carrier,
+        AgentPropagation.KeyClassifier classifier,
+        AgentPropagation.KeyValueConsumer consumer) {
       for (Map.Entry<String, String> entry : carrier.getContext().entrySet()) {
         String lowerCaseKey = entry.getKey().toLowerCase();
         int classification = classifier.classify(lowerCaseKey);
         if (classification != -1) {
-          consumer.accept(classification, lowerCaseKey, entry.getValue());
+          if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {
+            return;
+          }
         }
       }
     }

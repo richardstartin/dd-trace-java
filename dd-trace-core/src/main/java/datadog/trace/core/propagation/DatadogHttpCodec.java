@@ -3,16 +3,13 @@ package datadog.trace.core.propagation;
 import static datadog.trace.core.propagation.HttpCodec.firstHeaderValue;
 
 import datadog.trace.api.DDId;
-import datadog.trace.api.sampling.PrioritySampling;
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import datadog.trace.core.DDSpanContext;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import lombok.extern.slf4j.Slf4j;
 
 /** A codec designed for HTTP transport via headers using Datadog headers */
@@ -25,9 +22,9 @@ class DatadogHttpCodec {
   private static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
   private static final String ORIGIN_KEY = "x-datadog-origin";
 
-  private static final Set<CharSequence> DD_KEYS = new HashSet<CharSequence>(Arrays.asList(
-    TRACE_ID_KEY, SPAN_ID_KEY, SAMPLING_PRIORITY_KEY, ORIGIN_KEY
-  ));
+  private static final Set<CharSequence> DD_KEYS =
+      new HashSet<CharSequence>(
+          Arrays.asList(TRACE_ID_KEY, SPAN_ID_KEY, SAMPLING_PRIORITY_KEY, ORIGIN_KEY));
 
   private DatadogHttpCodec() {
     // This class should not be created. This also makes code coverage checks happy.
@@ -57,12 +54,14 @@ class DatadogHttpCodec {
   }
 
   public static HttpCodec.Extractor newExtractor(final Map<String, String> tagMapping) {
-    return new TagContextExtractor(tagMapping, new ContextInterpreter.Factory() {
-      @Override
-      protected ContextInterpreter construct(Map<String, String> mapping) {
-        return new DatadogContextInterpreter(mapping);
-      }
-    });
+    return new TagContextExtractor(
+        tagMapping,
+        new ContextInterpreter.Factory() {
+          @Override
+          protected ContextInterpreter construct(Map<String, String> mapping) {
+            return new DatadogContextInterpreter(mapping);
+          }
+        });
   }
 
   private static class DatadogContextInterpreter extends ContextInterpreter {
@@ -82,42 +81,46 @@ class DatadogHttpCodec {
         String firstValue = firstHeaderValue(value);
         if (null != firstValue) {
           switch (classification) {
-            case SPECIAL_HEADERS: {
-              switch (lowerCaseKey) {
-                case TRACE_ID_KEY:
-                  traceId = DDId.from(firstValue);
-                  break;
-                case SPAN_ID_KEY:
-                  spanId = DDId.from(firstValue);
-                  break;
-                case ORIGIN_KEY:
-                  origin = firstValue;
-                  break;
-                case SAMPLING_PRIORITY_KEY:
-                  samplingPriority = Integer.parseInt(firstValue);
-                  break;
-                default:
-                  // shouldn't happen
-              }
-              break;
-            }
-            case TAGS: {
-              String mappedKey = taggedHeaders.get(lowerCaseKey);
-              if (null != mappedKey) {
-                if (tags.isEmpty()) {
-                  tags = new HashMap<>();
+            case SPECIAL_HEADERS:
+              {
+                switch (lowerCaseKey) {
+                  case TRACE_ID_KEY:
+                    traceId = DDId.from(firstValue);
+                    break;
+                  case SPAN_ID_KEY:
+                    spanId = DDId.from(firstValue);
+                    break;
+                  case ORIGIN_KEY:
+                    origin = firstValue;
+                    break;
+                  case SAMPLING_PRIORITY_KEY:
+                    samplingPriority = Integer.parseInt(firstValue);
+                    break;
+                  default:
+                    // shouldn't happen
                 }
-                tags.put(mappedKey, HttpCodec.decode(value));
+                break;
+              }
+            case TAGS:
+              {
+                String mappedKey = taggedHeaders.get(lowerCaseKey);
+                if (null != mappedKey) {
+                  if (tags.isEmpty()) {
+                    tags = new HashMap<>();
+                  }
+                  tags.put(mappedKey, HttpCodec.decode(value));
+                }
+                break;
+              }
+            case OT_BAGGAGE:
+              {
+                if (baggage.isEmpty()) {
+                  baggage = new HashMap<>();
+                }
+                baggage.put(
+                    lowerCaseKey.substring(OT_BAGGAGE_PREFIX.length()), HttpCodec.decode(value));
               }
               break;
-            }
-            case OT_BAGGAGE: {
-              if (baggage.isEmpty()) {
-                baggage = new HashMap<>();
-              }
-              baggage.put(lowerCaseKey.substring(OT_BAGGAGE_PREFIX.length()), HttpCodec.decode(value));
-            }
-            break;
           }
         }
       } catch (RuntimeException e) {
@@ -142,5 +145,4 @@ class DatadogHttpCodec {
       return IGNORE;
     }
   }
-
 }

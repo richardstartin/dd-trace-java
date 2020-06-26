@@ -7,7 +7,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +89,8 @@ public class HttpCodec {
     }
 
     @Override
-    public <C> TagContext extract(final C carrier, final AgentPropagation.ContextVisitor<C> setter) {
+    public <C> TagContext extract(
+        final C carrier, final AgentPropagation.ContextVisitor<C> setter) {
       TagContext context = null;
       for (final Extractor extractor : extractors) {
         context = extractor.extract(carrier, setter);

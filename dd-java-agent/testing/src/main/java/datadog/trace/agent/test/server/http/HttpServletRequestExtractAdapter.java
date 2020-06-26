@@ -1,8 +1,8 @@
 package datadog.trace.agent.test.server.http;
 
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
-import javax.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Tracer extract adapter for {@link HttpServletRequest}.
@@ -17,14 +17,19 @@ public class HttpServletRequestExtractAdapter
       new HttpServletRequestExtractAdapter();
 
   @Override
-  public void forEachKey(HttpServletRequest carrier, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
+  public void forEachKey(
+      HttpServletRequest carrier,
+      AgentPropagation.KeyClassifier classifier,
+      AgentPropagation.KeyValueConsumer consumer) {
     Enumeration<String> headerNames = carrier.getHeaderNames();
     while (headerNames.hasMoreElements()) {
       String header = headerNames.nextElement();
       String lowerCaseKey = header.toLowerCase();
       int classification = classifier.classify(lowerCaseKey);
       if (classification != -1) {
-        consumer.accept(classification, lowerCaseKey, carrier.getHeader(header));
+        if (!consumer.accept(classification, lowerCaseKey, carrier.getHeader(header))) {
+          return;
+        }
       }
     }
   }

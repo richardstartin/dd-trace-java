@@ -6,13 +6,12 @@ import datadog.trace.api.DDId;
 import datadog.trace.api.sampling.PrioritySampling;
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import datadog.trace.core.DDSpanContext;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A codec designed for HTTP transport via headers using B3 headers
@@ -65,12 +64,14 @@ class B3HttpCodec {
   }
 
   public static HttpCodec.Extractor newExtractor(final Map<String, String> tagMapping) {
-    return new TagContextExtractor(tagMapping, new ContextInterpreter.Factory() {
-      @Override
-      protected ContextInterpreter construct(Map<String, String> mapping) {
-        return new B3ContextInterpreter(mapping);
-      }
-    });
+    return new TagContextExtractor(
+        tagMapping,
+        new ContextInterpreter.Factory() {
+          @Override
+          protected ContextInterpreter construct(Map<String, String> mapping) {
+            return new B3ContextInterpreter(mapping);
+          }
+        });
   }
 
   private static class B3ContextInterpreter extends ContextInterpreter {
@@ -79,8 +80,8 @@ class B3HttpCodec {
     private static final String SPAN_ID_KEY_LC = "x-b3-spanid";
     private static final String SAMPLING_PRIORITY_KEY_LC = "x-b3-sampled";
 
-    private static final Set<String> B3_KEYS = new HashSet<>(Arrays.asList(
-      TRACE_ID_KEY_LC, SPAN_ID_KEY_LC, SAMPLING_PRIORITY_KEY_LC));
+    private static final Set<String> B3_KEYS =
+        new HashSet<>(Arrays.asList(TRACE_ID_KEY_LC, SPAN_ID_KEY_LC, SAMPLING_PRIORITY_KEY_LC));
 
     private static final int SPECIAL_HEADERS = 0;
     private static final int TAGS = 1;
@@ -96,44 +97,47 @@ class B3HttpCodec {
         String firstValue = firstHeaderValue(value);
         if (null != firstValue) {
           switch (classification) {
-            case SPECIAL_HEADERS: {
-              switch (lowerCaseKey) {
-                case TRACE_ID_KEY_LC:{
-                  final String trimmedValue;
-                  final int length = firstValue.length();
-                  if (length > 32) {
-                    log.debug("Header {} exceeded max length of 32: {}", TRACE_ID_KEY, value);
-                    traceId = DDId.ZERO;
-                    return true;
-                  } else if (length > 16) {
-                    trimmedValue = value.substring(length - 16);
-                  } else {
-                    trimmedValue = value;
+            case SPECIAL_HEADERS:
+              {
+                switch (lowerCaseKey) {
+                  case TRACE_ID_KEY_LC:
+                    {
+                      final String trimmedValue;
+                      final int length = firstValue.length();
+                      if (length > 32) {
+                        log.debug("Header {} exceeded max length of 32: {}", TRACE_ID_KEY, value);
+                        traceId = DDId.ZERO;
+                        return true;
+                      } else if (length > 16) {
+                        trimmedValue = value.substring(length - 16);
+                      } else {
+                        trimmedValue = value;
+                      }
+                      traceId = DDId.fromHex(trimmedValue);
+                      break;
+                    }
+                  case SPAN_ID_KEY_LC:
+                    spanId = DDId.fromHex(firstValue);
+                    break;
+                  case SAMPLING_PRIORITY_KEY_LC:
+                    samplingPriority = convertSamplingPriority(firstValue);
+                    break;
+                  default:
+                    // shouldn't happen
+                }
+                break;
+              }
+            case TAGS:
+              {
+                String mappedKey = taggedHeaders.get(lowerCaseKey);
+                if (null != mappedKey) {
+                  if (tags.isEmpty()) {
+                    tags = new TreeMap<>();
                   }
-                  traceId = DDId.fromHex(trimmedValue);
-                  break;
+                  tags.put(mappedKey, HttpCodec.decode(value));
                 }
-                case SPAN_ID_KEY_LC:
-                  spanId = DDId.fromHex(firstValue);
-                  break;
-                case SAMPLING_PRIORITY_KEY_LC:
-                  samplingPriority = convertSamplingPriority(firstValue);
-                  break;
-                default:
-                  // shouldn't happen
+                break;
               }
-              break;
-            }
-            case TAGS: {
-              String mappedKey = taggedHeaders.get(lowerCaseKey);
-              if (null != mappedKey) {
-                if (tags.isEmpty()) {
-                  tags = new TreeMap<>();
-                }
-                tags.put(mappedKey, HttpCodec.decode(value));
-              }
-              break;
-            }
           }
         }
       } catch (RuntimeException e) {
@@ -157,9 +161,8 @@ class B3HttpCodec {
 
     private int convertSamplingPriority(final String samplingPriority) {
       return "1".equals(samplingPriority)
-        ? PrioritySampling.SAMPLER_KEEP
-        : PrioritySampling.SAMPLER_DROP;
+          ? PrioritySampling.SAMPLER_KEEP
+          : PrioritySampling.SAMPLER_DROP;
     }
   }
-
 }

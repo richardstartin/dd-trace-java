@@ -9,16 +9,18 @@ public class AkkaHttpServerHeaders implements AgentPropagation.ContextVisitor<Ht
   public static final AkkaHttpServerHeaders GETTER = new AkkaHttpServerHeaders();
 
   @Override
-  public void forEachKey(final HttpRequest carrier,
-                         final AgentPropagation.KeyClassifier classifier,
-                         final AgentPropagation.KeyValueConsumer consumer) {
+  public void forEachKey(
+      final HttpRequest carrier,
+      final AgentPropagation.KeyClassifier classifier,
+      final AgentPropagation.KeyValueConsumer consumer) {
     for (final HttpHeader header : carrier.getHeaders()) {
       String name = header.lowercaseName();
       int classification = classifier.classify(name);
       if (classification != -1) {
-        consumer.accept(classification, name, header.value());
+        if (!consumer.accept(classification, name, header.value())) {
+          return;
+        }
       }
     }
   }
-
 }

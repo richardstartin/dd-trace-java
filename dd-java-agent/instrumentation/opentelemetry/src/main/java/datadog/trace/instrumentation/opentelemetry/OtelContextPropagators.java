@@ -97,13 +97,16 @@ public class OtelContextPropagators implements ContextPropagators {
     }
 
     @Override
-    public void forEachKey(C carrier,
-                           AgentPropagation.KeyClassifier classifier,
-                           AgentPropagation.KeyValueConsumer consumer) {
+    public void forEachKey(
+        C carrier,
+        AgentPropagation.KeyClassifier classifier,
+        AgentPropagation.KeyValueConsumer consumer) {
       for (String key : KEYS) {
         int classification = classifier.classify(key);
         if (-1 != classification) {
-          consumer.accept(classification, key, getter.get(carrier, key));
+          if (!consumer.accept(classification, key, getter.get(carrier, key))) {
+            return;
+          }
         }
       }
     }

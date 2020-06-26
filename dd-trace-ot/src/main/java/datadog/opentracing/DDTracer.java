@@ -350,7 +350,8 @@ public class DDTracer implements Tracer, datadog.trace.api.Tracer {
     }
   }
 
-  private static class TextMapExtractGetter implements AgentPropagation.ContextVisitor<TextMapExtract> {
+  private static class TextMapExtractGetter
+      implements AgentPropagation.ContextVisitor<TextMapExtract> {
     private final TextMapExtract carrier;
 
     private TextMapExtractGetter(final TextMapExtract carrier) {
@@ -358,12 +359,17 @@ public class DDTracer implements Tracer, datadog.trace.api.Tracer {
     }
 
     @Override
-    public void forEachKey(TextMapExtract ignored, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
+    public void forEachKey(
+        TextMapExtract ignored,
+        AgentPropagation.KeyClassifier classifier,
+        AgentPropagation.KeyValueConsumer consumer) {
       for (Entry<String, String> entry : carrier) {
         String lowerCaseKey = entry.getKey().toLowerCase();
         int classification = classifier.classify(lowerCaseKey);
         if (classification != -1) {
-          consumer.accept(classification, lowerCaseKey, entry.getValue());
+          if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {
+            return;
+          }
         }
       }
     }

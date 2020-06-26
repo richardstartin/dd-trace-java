@@ -6,13 +6,12 @@ import datadog.trace.api.DDId;
 import datadog.trace.api.sampling.PrioritySampling;
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import datadog.trace.core.DDSpanContext;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A codec designed for HTTP transport via headers using Haystack headers.
@@ -48,12 +47,14 @@ public class HaystackHttpCodec {
   }
 
   public static HttpCodec.Extractor newExtractor(final Map<String, String> tagMapping) {
-    return new TagContextExtractor(tagMapping, new ContextInterpreter.Factory() {
-      @Override
-      protected ContextInterpreter construct(Map<String, String> mapping) {
-        return new HaystackContextInterpreter(mapping);
-      }
-    });
+    return new TagContextExtractor(
+        tagMapping,
+        new ContextInterpreter.Factory() {
+          @Override
+          protected ContextInterpreter construct(Map<String, String> mapping) {
+            return new HaystackContextInterpreter(mapping);
+          }
+        });
   }
 
   private static class HaystackContextInterpreter extends ContextInterpreter {
@@ -62,9 +63,8 @@ public class HaystackHttpCodec {
     private static final String TRACE_ID_KEY_LC = "trace-id";
     private static final String SPAN_ID_KEY_LC = "span-id";
 
-    private static final Set<String> HAYSTACK_KEYS = new HashSet<>(Arrays.asList(
-      TRACE_ID_KEY_LC, SPAN_ID_KEY_LC
-    ));
+    private static final Set<String> HAYSTACK_KEYS =
+        new HashSet<>(Arrays.asList(TRACE_ID_KEY_LC, SPAN_ID_KEY_LC));
 
     private static final int SPECIAL_HEADERS = 0;
     private static final int TAGS = 1;
@@ -81,36 +81,40 @@ public class HaystackHttpCodec {
         String firstValue = firstHeaderValue(value);
         if (null != firstValue) {
           switch (classification) {
-            case SPECIAL_HEADERS: {
-              switch (lowerCaseKey) {
-                case TRACE_ID_KEY_LC:
-                  traceId = DDId.from(firstValue);
-                  break;
-                case SPAN_ID_KEY_LC:
-                  spanId = DDId.from(firstValue);
-                  break;
-                default:
-                  // shouldn't happen
-              }
-              break;
-            }
-            case TAGS: {
-              String mappedKey = taggedHeaders.get(lowerCaseKey);
-              if (null != mappedKey) {
-                if (tags.isEmpty()) {
-                  tags = new TreeMap<>();
+            case SPECIAL_HEADERS:
+              {
+                switch (lowerCaseKey) {
+                  case TRACE_ID_KEY_LC:
+                    traceId = DDId.from(firstValue);
+                    break;
+                  case SPAN_ID_KEY_LC:
+                    spanId = DDId.from(firstValue);
+                    break;
+                  default:
+                    // shouldn't happen
                 }
-                tags.put(mappedKey, HttpCodec.decode(value));
+                break;
               }
-              break;
-            }
-            case OT_BAGGAGE: {
-              if (baggage.isEmpty()) {
-                baggage = new TreeMap<>();
+            case TAGS:
+              {
+                String mappedKey = taggedHeaders.get(lowerCaseKey);
+                if (null != mappedKey) {
+                  if (tags.isEmpty()) {
+                    tags = new TreeMap<>();
+                  }
+                  tags.put(mappedKey, HttpCodec.decode(value));
+                }
+                break;
               }
-              baggage.put(lowerCaseKey.substring(OT_BAGGAGE_PREFIX_LC.length()), HttpCodec.decode(value));
-              break;
-            }
+            case OT_BAGGAGE:
+              {
+                if (baggage.isEmpty()) {
+                  baggage = new TreeMap<>();
+                }
+                baggage.put(
+                    lowerCaseKey.substring(OT_BAGGAGE_PREFIX_LC.length()), HttpCodec.decode(value));
+                break;
+              }
           }
         }
       } catch (RuntimeException e) {

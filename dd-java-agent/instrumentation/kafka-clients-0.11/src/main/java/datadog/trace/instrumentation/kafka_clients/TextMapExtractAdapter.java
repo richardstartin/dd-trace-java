@@ -9,14 +9,19 @@ public class TextMapExtractAdapter implements AgentPropagation.ContextVisitor<He
   public static final TextMapExtractAdapter GETTER = new TextMapExtractAdapter();
 
   @Override
-  public void forEachKey(Headers carrier, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
+  public void forEachKey(
+      Headers carrier,
+      AgentPropagation.KeyClassifier classifier,
+      AgentPropagation.KeyValueConsumer consumer) {
     for (Header header : carrier) {
       String lowerCaseKey = header.key();
       int classification = classifier.classify(lowerCaseKey);
       if (classification != -1) {
         byte[] value = header.value();
         if (null != value) {
-          consumer.accept(classification, lowerCaseKey, new String(header.value()));
+          if (!consumer.accept(classification, lowerCaseKey, new String(header.value()))) {
+            return;
+          }
         }
       }
     }
