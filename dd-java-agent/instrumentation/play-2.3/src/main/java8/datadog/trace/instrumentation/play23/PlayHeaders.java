@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.play23;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import play.api.mvc.Headers;
 import scala.Tuple2;
@@ -18,7 +20,7 @@ public class PlayHeaders implements AgentPropagation.ContextVisitor<Headers> {
     for (Tuple2<String, Seq<String>> entry : JavaConversions.asJavaIterable(carrier.data())) {
       String lowerCaseKey = entry._1().toLowerCase();
       int classification = classifier.classify(lowerCaseKey);
-      if (classification != -1 && !entry._2().isEmpty()) {
+      if (classification != IGNORE && !entry._2().isEmpty()) {
         if (!consumer.accept(classification, lowerCaseKey, entry._2().head())) {
           return;
         }

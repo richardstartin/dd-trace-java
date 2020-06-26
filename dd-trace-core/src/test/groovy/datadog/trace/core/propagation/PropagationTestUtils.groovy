@@ -2,6 +2,8 @@ package datadog.trace.core.propagation
 
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE
+
 class MapSetter implements AgentPropagation.Setter<Map<String, String>> {
   static final INSTANCE = new MapSetter()
 
@@ -21,7 +23,7 @@ class MapGetter implements AgentPropagation.ContextVisitor<Map<String, String>> 
     for (Map.Entry<String, String> entry : carrier.entrySet()) {
       String lowerCaseKey = entry.getKey().toLowerCase()
       int classification = classifier.classify(lowerCaseKey)
-      if (classification != -1) {
+      if (classification != IGNORE) {
         if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {
           return
         }

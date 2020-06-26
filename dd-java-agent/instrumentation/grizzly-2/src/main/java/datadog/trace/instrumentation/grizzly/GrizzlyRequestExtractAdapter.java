@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.grizzly;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import org.glassfish.grizzly.http.server.Request;
 
@@ -15,7 +17,7 @@ public class GrizzlyRequestExtractAdapter implements AgentPropagation.ContextVis
     for (String header : carrier.getHeaderNames()) {
       String lowerCaseKey = header.toLowerCase();
       int classification = classifier.classify(lowerCaseKey);
-      if (classification != -1) {
+      if (classification != IGNORE) {
         if (!consumer.accept(classification, lowerCaseKey, carrier.getHeader(header))) {
           return;
         }

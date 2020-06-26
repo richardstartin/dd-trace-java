@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.play26;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import play.api.mvc.Headers;
 import scala.Option;
@@ -17,7 +19,7 @@ public class PlayHeaders implements AgentPropagation.ContextVisitor<Headers> {
     for (String entry : JavaConversions.asJavaIterable(carrier.keys())) {
       String lowerCaseKey = entry.toLowerCase();
       int classification = classifier.classify(lowerCaseKey);
-      if (classification != -1) {
+      if (classification != IGNORE) {
         Option<String> value = carrier.get(entry);
         if (value.nonEmpty()) {
           if (!consumer.accept(classification, lowerCaseKey, value.get())) {

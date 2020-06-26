@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.grpc.server;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import io.grpc.Metadata;
 
@@ -16,7 +18,7 @@ public final class GrpcExtractAdapter implements AgentPropagation.ContextVisitor
       if (!key.endsWith(Metadata.BINARY_HEADER_SUFFIX)) {
         String lowerCaseKey = key.toLowerCase();
         int classification = classifier.classify(lowerCaseKey);
-        if (classification != -1) {
+        if (classification != IGNORE) {
           if (!consumer.accept(
               classification,
               lowerCaseKey,

@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.jms;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import java.util.Enumeration;
 import javax.jms.JMSException;
@@ -23,7 +25,7 @@ public class MessageExtractAdapter implements AgentPropagation.ContextVisitor<Me
           String key = (String) enumeration.nextElement();
           String lowerCaseKey = key.toLowerCase();
           int classification = classifier.classify(lowerCaseKey);
-          if (classification != -1) {
+          if (classification != IGNORE) {
             Object value = carrier.getObjectProperty(key);
             if (!consumer.accept(classification, lowerCaseKey, String.valueOf(value))) {
               return;

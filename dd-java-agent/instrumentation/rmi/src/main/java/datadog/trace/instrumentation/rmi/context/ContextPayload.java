@@ -1,5 +1,6 @@
 package datadog.trace.instrumentation.rmi.context;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
 import static datadog.trace.bootstrap.instrumentation.api.AgentTracer.propagate;
 
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
@@ -60,7 +61,7 @@ public class ContextPayload {
       for (Map.Entry<String, String> entry : carrier.getContext().entrySet()) {
         String lowerCaseKey = entry.getKey().toLowerCase();
         int classification = classifier.classify(lowerCaseKey);
-        if (classification != -1) {
+        if (classification != IGNORE) {
           if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {
             return;
           }

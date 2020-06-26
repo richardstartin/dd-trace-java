@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.opentracing32;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import io.opentracing.propagation.TextMapExtract;
 import io.opentracing.propagation.TextMapInject;
@@ -35,7 +37,7 @@ class OTPropagation {
       for (Map.Entry<String, String> entry : extracted.entrySet()) {
         String lowerCaseKey = entry.getKey().toLowerCase();
         int classification = classifier.classify(lowerCaseKey);
-        if (classification != -1) {
+        if (classification != IGNORE) {
           if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {
             return;
           }

@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.rabbitmq.amqp;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import java.util.Map;
 
@@ -15,7 +17,7 @@ public class TextMapExtractAdapter implements AgentPropagation.ContextVisitor<Ma
     for (Map.Entry<String, Object> entry : carrier.entrySet()) {
       String lowerCaseKey = entry.getKey().toLowerCase();
       int classification = classifier.classify(lowerCaseKey);
-      if (classification != -1) {
+      if (classification != IGNORE) {
         if (!consumer.accept(
             classification,
             lowerCaseKey,

@@ -17,6 +17,7 @@ public interface AgentPropagation {
   <C> AgentSpan.Context extract(C carrier, ContextVisitor<C> getter);
 
   interface KeyClassifier {
+    int IGNORE = -1;
     int classify(String key);
   }
 

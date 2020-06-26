@@ -1,5 +1,7 @@
 package datadog.trace.agent.test.server.http;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import java.util.Enumeration;
 import javax.servlet.http.HttpServletRequest;
@@ -26,7 +28,7 @@ public class HttpServletRequestExtractAdapter
       String header = headerNames.nextElement();
       String lowerCaseKey = header.toLowerCase();
       int classification = classifier.classify(lowerCaseKey);
-      if (classification != -1) {
+      if (classification != IGNORE) {
         if (!consumer.accept(classification, lowerCaseKey, carrier.getHeader(header))) {
           return;
         }
