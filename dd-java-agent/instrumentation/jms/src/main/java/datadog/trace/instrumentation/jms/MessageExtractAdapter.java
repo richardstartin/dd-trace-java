@@ -22,10 +22,11 @@ public class MessageExtractAdapter implements AgentPropagation.ContextVisitor<Me
       final Enumeration<?> enumeration = carrier.getPropertyNames();
       if (null != enumeration) {
         while (enumeration.hasMoreElements()) {
-          String key = ((String) enumeration.nextElement())
-            .replace('$', '-')
-            // true story \/
-            .replace("__dash__", "-");
+          String key =
+              ((String) enumeration.nextElement())
+                  .replace('$', '-')
+                  // true story \/
+                  .replace("__dash__", "-");
           String lowerCaseKey = key.toLowerCase();
           int classification = classifier.classify(lowerCaseKey);
           if (classification != IGNORE) {

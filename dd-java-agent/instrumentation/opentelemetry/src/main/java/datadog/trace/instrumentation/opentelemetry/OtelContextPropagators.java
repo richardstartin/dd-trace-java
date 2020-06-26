@@ -1,5 +1,7 @@
 package datadog.trace.instrumentation.opentelemetry;
 
+import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE;
+
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import datadog.trace.bootstrap.instrumentation.api.AgentTracer;
@@ -103,7 +105,7 @@ public class OtelContextPropagators implements ContextPropagators {
         AgentPropagation.KeyValueConsumer consumer) {
       for (String key : KEYS) {
         int classification = classifier.classify(key);
-        if (-1 != classification) {
+        if (IGNORE != classification) {
           if (!consumer.accept(classification, key, getter.get(carrier, key))) {
             return;
           }
