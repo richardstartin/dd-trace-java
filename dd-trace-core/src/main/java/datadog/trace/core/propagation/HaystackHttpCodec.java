@@ -6,14 +6,13 @@ import datadog.trace.api.DDId;
 import datadog.trace.api.sampling.PrioritySampling;
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import datadog.trace.core.DDSpanContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import lombok.extern.slf4j.Slf4j;
+import java.util.TreeMap;
 
 /**
  * A codec designed for HTTP transport via headers using Haystack headers.
@@ -51,8 +50,8 @@ public class HaystackHttpCodec {
   public static HttpCodec.Extractor newExtractor(final Map<String, String> tagMapping) {
     return new TagContextExtractor(tagMapping, new ContextInterpreter.Factory() {
       @Override
-      public ContextInterpreter create(Map<String, String> tagsMapping) {
-        return new HaystackContextInterpreter(tagMapping);
+      protected ContextInterpreter construct(Map<String, String> mapping) {
+        return new HaystackContextInterpreter(mapping);
       }
     });
   }
@@ -93,25 +92,29 @@ public class HaystackHttpCodec {
                 default:
                   // shouldn't happen
               }
+              break;
             }
             case TAGS: {
               String mappedKey = taggedHeaders.get(lowerCaseKey);
               if (null != mappedKey) {
-                if (null == tags) {
-                  tags = new HashMap<>();
+                if (tags.isEmpty()) {
+                  tags = new TreeMap<>();
                 }
                 tags.put(mappedKey, HttpCodec.decode(value));
               }
+              break;
             }
             case OT_BAGGAGE: {
-              if (null == baggage) {
-                baggage = new HashMap<>();
+              if (baggage.isEmpty()) {
+                baggage = new TreeMap<>();
               }
               baggage.put(lowerCaseKey.substring(OT_BAGGAGE_PREFIX_LC.length()), HttpCodec.decode(value));
+              break;
             }
           }
         }
       } catch (RuntimeException e) {
+        invalidateContext();
         log.error("Exception when extracting context", e);
         return false;
       }
@@ -130,6 +133,11 @@ public class HaystackHttpCodec {
         return OT_BAGGAGE;
       }
       return IGNORE;
+    }
+
+    @Override
+    protected int defaultSamplingPriority() {
+      return PrioritySampling.SAMPLER_KEEP;
     }
   }
 }

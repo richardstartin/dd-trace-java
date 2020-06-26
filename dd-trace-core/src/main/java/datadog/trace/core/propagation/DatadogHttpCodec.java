@@ -59,8 +59,8 @@ class DatadogHttpCodec {
   public static HttpCodec.Extractor newExtractor(final Map<String, String> tagMapping) {
     return new TagContextExtractor(tagMapping, new ContextInterpreter.Factory() {
       @Override
-      public ContextInterpreter create(Map<String, String> tagsMapping) {
-        return new DatadogContextInterpreter(tagMapping);
+      protected ContextInterpreter construct(Map<String, String> mapping) {
+        return new DatadogContextInterpreter(mapping);
       }
     });
   }
@@ -95,28 +95,33 @@ class DatadogHttpCodec {
                   break;
                 case SAMPLING_PRIORITY_KEY:
                   samplingPriority = Integer.parseInt(firstValue);
+                  break;
                 default:
                   // shouldn't happen
               }
+              break;
             }
             case TAGS: {
               String mappedKey = taggedHeaders.get(lowerCaseKey);
               if (null != mappedKey) {
-                if (null == tags) {
+                if (tags.isEmpty()) {
                   tags = new HashMap<>();
                 }
                 tags.put(mappedKey, HttpCodec.decode(value));
               }
+              break;
             }
             case OT_BAGGAGE: {
-              if (null == baggage) {
+              if (baggage.isEmpty()) {
                 baggage = new HashMap<>();
               }
               baggage.put(lowerCaseKey.substring(OT_BAGGAGE_PREFIX.length()), HttpCodec.decode(value));
             }
+            break;
           }
         }
       } catch (RuntimeException e) {
+        invalidateContext();
         log.error("Exception when extracting context", e);
         return false;
       }

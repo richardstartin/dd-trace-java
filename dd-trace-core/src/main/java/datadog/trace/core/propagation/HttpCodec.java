@@ -45,21 +45,17 @@ public class HttpCodec {
 
   public static Extractor createExtractor(
       final Config config, final Map<String, String> taggedHeaders) {
-    final Map<String, String> cleanedMapping = new HashMap<>(taggedHeaders.size() * 4 / 3);
-    for (Map.Entry<String, String> association : taggedHeaders.entrySet()) {
-      cleanedMapping.put(association.getKey().trim().toLowerCase(), association.getValue().trim().toLowerCase());
-    }
     final List<Extractor> extractors = new ArrayList<>();
     for (final Config.PropagationStyle style : config.getPropagationStylesToExtract()) {
       switch (style) {
         case DATADOG:
-          extractors.add(DatadogHttpCodec.newExtractor(cleanedMapping));
+          extractors.add(DatadogHttpCodec.newExtractor(taggedHeaders));
           break;
         case HAYSTACK:
-          extractors.add(HaystackHttpCodec.newExtractor(cleanedMapping));
+          extractors.add(HaystackHttpCodec.newExtractor(taggedHeaders));
           break;
         case B3:
-          extractors.add(B3HttpCodec.newExtractor(cleanedMapping));
+          extractors.add(B3HttpCodec.newExtractor(taggedHeaders));
           break;
         default:
           log.debug("No implementation found to extract propagation style: {}", style);

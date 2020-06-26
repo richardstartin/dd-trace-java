@@ -22,7 +22,9 @@ class MapGetter implements AgentPropagation.ContextVisitor<Map<String, String>> 
       String lowerCaseKey = entry.getKey().toLowerCase()
       int classification = classifier.classify(lowerCaseKey)
       if (classification != -1) {
-        consumer.accept(classification, lowerCaseKey, entry.getValue())
+        if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {
+          return
+        }
       }
     }
   }
