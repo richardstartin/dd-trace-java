@@ -5,6 +5,7 @@ import static datadog.trace.bootstrap.instrumentation.api.AgentTracer.propagate;
 
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
+import datadog.trace.bootstrap.instrumentation.api.CachingContextVisitor;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -51,7 +52,7 @@ public class ContextPayload {
     out.writeObject(context);
   }
 
-  public static class ExtractAdapter implements AgentPropagation.ContextVisitor<ContextPayload> {
+  public static class ExtractAdapter extends CachingContextVisitor<ContextPayload> {
 
     @Override
     public void forEachKey(
@@ -59,7 +60,7 @@ public class ContextPayload {
         AgentPropagation.KeyClassifier classifier,
         AgentPropagation.KeyValueConsumer consumer) {
       for (Map.Entry<String, String> entry : carrier.getContext().entrySet()) {
-        String lowerCaseKey = entry.getKey().toLowerCase();
+        String lowerCaseKey = toLowerCase(entry.getKey());
         int classification = classifier.classify(lowerCaseKey);
         if (classification != IGNORE) {
           if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {

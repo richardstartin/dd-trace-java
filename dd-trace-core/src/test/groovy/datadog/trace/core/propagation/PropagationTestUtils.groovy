@@ -1,6 +1,7 @@
 package datadog.trace.core.propagation
 
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation
+import datadog.trace.bootstrap.instrumentation.api.CachingContextVisitor
 
 import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyClassifier.IGNORE
 
@@ -13,7 +14,7 @@ class MapSetter implements AgentPropagation.Setter<Map<String, String>> {
   }
 }
 
-class MapGetter implements AgentPropagation.ContextVisitor<Map<String, String>> {
+class MapGetter extends CachingContextVisitor<Map<String, String>> {
   static final INSTANCE = new MapGetter()
 
   @Override
@@ -21,7 +22,7 @@ class MapGetter implements AgentPropagation.ContextVisitor<Map<String, String>> 
                   AgentPropagation.KeyClassifier classifier,
                   AgentPropagation.KeyValueConsumer consumer) {
     for (Map.Entry<String, String> entry : carrier.entrySet()) {
-      String lowerCaseKey = entry.getKey().toLowerCase()
+      String lowerCaseKey = toLowerCase(entry.getKey())
       int classification = classifier.classify(lowerCaseKey)
       if (classification != IGNORE) {
         if (!consumer.accept(classification, lowerCaseKey, entry.getValue())) {

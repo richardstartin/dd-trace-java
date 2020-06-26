@@ -5,6 +5,7 @@ import static datadog.trace.bootstrap.instrumentation.api.AgentPropagation.KeyCl
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import datadog.trace.bootstrap.instrumentation.api.AgentTracer;
+import datadog.trace.bootstrap.instrumentation.api.CachingContextVisitor;
 import io.grpc.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.HttpTextFormat;
@@ -65,19 +66,19 @@ public class OtelContextPropagators implements ContextPropagators {
     }
   }
 
-  private static class OtelGetter<C> implements AgentPropagation.ContextVisitor<C> {
+  private static class OtelGetter<C> extends CachingContextVisitor<C> {
     private static final String DD_TRACE_ID_KEY = "x-datadog-trace-id";
     private static final String DD_SPAN_ID_KEY = "x-datadog-parent-id";
     private static final String DD_SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
     private static final String DD_ORIGIN_KEY = "x-datadog-origin";
 
-    private static final String B3_TRACE_ID_KEY = "X-B3-TraceId".toLowerCase();
-    private static final String B3_SPAN_ID_KEY = "X-B3-SpanId".toLowerCase();
-    private static final String B3_SAMPLING_PRIORITY_KEY = "X-B3-Sampled".toLowerCase();
+    private static final String B3_TRACE_ID_KEY = "X-B3-TraceId";
+    private static final String B3_SPAN_ID_KEY = "X-B3-SpanId";
+    private static final String B3_SAMPLING_PRIORITY_KEY = "X-B3-Sampled";
 
-    private static final String HAYSTACK_TRACE_ID_KEY = "Trace-ID".toLowerCase();
-    private static final String HAYSTACK_SPAN_ID_KEY = "Span-ID".toLowerCase();
-    private static final String HAYSTACK_PARENT_ID_KEY = "Parent_ID".toLowerCase();
+    private static final String HAYSTACK_TRACE_ID_KEY = "Trace-ID";
+    private static final String HAYSTACK_SPAN_ID_KEY = "Span-ID";
+    private static final String HAYSTACK_PARENT_ID_KEY = "Parent_ID";
 
     private static final List<String> KEYS =
         Arrays.asList(
@@ -104,9 +105,10 @@ public class OtelContextPropagators implements ContextPropagators {
         AgentPropagation.KeyClassifier classifier,
         AgentPropagation.KeyValueConsumer consumer) {
       for (String key : KEYS) {
-        int classification = classifier.classify(key);
-        if (IGNORE != classification) {
-          if (!consumer.accept(classification, key, getter.get(carrier, key))) {
+        String lowerCaseKey = toLowerCase(key);
+        int classification = classifier.classify(lowerCaseKey);
+        if (classification != IGNORE) {
+          if (!consumer.accept(classification, lowerCaseKey, getter.get(carrier, key))) {
             return;
           }
         }
