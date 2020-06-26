@@ -3,24 +3,25 @@ package datadog.trace.instrumentation.play24;
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import play.api.mvc.Headers;
 import scala.Option;
+import scala.Tuple2;
 import scala.collection.JavaConversions;
+import scala.collection.Seq;
 
-public class PlayHeaders implements AgentPropagation.Getter<Headers> {
+public class PlayHeaders implements AgentPropagation.ContextVisitor<Headers> {
 
   public static final PlayHeaders GETTER = new PlayHeaders();
 
   @Override
-  public Iterable<String> keys(final Headers headers) {
-    return JavaConversions.asJavaIterable(headers.keys());
-  }
-
-  @Override
-  public String get(final Headers headers, final String key) {
-    final Option<String> option = headers.get(key);
-    if (option.isDefined()) {
-      return option.get();
-    } else {
-      return null;
+  public void forEachKey(Headers carrier, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
+    for (String entry : JavaConversions.asJavaIterable(carrier.keys())) {
+      String lowerCaseKey = entry.toLowerCase();
+      int classification = classifier.classify(lowerCaseKey);
+      if (classification != -1) {
+        Option<String> value = carrier.get(entry);
+        if (value.nonEmpty()) {
+          consumer.accept(classification, lowerCaseKey, value.get());
+        }
+      }
     }
   }
 }

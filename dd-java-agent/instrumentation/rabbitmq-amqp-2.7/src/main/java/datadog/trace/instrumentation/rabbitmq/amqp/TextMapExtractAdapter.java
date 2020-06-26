@@ -3,18 +3,21 @@ package datadog.trace.instrumentation.rabbitmq.amqp;
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
 import java.util.Map;
 
-public class TextMapExtractAdapter implements AgentPropagation.Getter<Map<String, Object>> {
+public class TextMapExtractAdapter implements AgentPropagation.ContextVisitor<Map<String, Object>> {
 
   public static final TextMapExtractAdapter GETTER = new TextMapExtractAdapter();
 
   @Override
-  public Iterable<String> keys(final Map<String, Object> carrier) {
-    return carrier.keySet();
-  }
-
-  @Override
-  public String get(final Map<String, Object> carrier, final String key) {
-    final Object obj = carrier.get(key);
-    return obj == null ? null : obj.toString();
+  public void forEachKey(Map<String, Object> carrier,
+                         AgentPropagation.KeyClassifier classifier,
+                         AgentPropagation.KeyValueConsumer consumer) {
+    for (Map.Entry<String, Object> entry : carrier.entrySet()) {
+      String lowerCaseKey = entry.getKey().toLowerCase();
+      int classification = classifier.classify(lowerCaseKey);
+      if (classification != -1) {
+        consumer.accept(classification, lowerCaseKey,
+          null == entry.getValue() ? null : String.valueOf(entry.getValue()));
+      }
+    }
   }
 }

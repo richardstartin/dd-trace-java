@@ -5,25 +5,21 @@ import io.grpc.Metadata;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class GrpcExtractAdapter implements AgentPropagation.Getter<Metadata> {
+public final class GrpcExtractAdapter implements AgentPropagation.ContextVisitor<Metadata> {
 
   public static final GrpcExtractAdapter GETTER = new GrpcExtractAdapter();
 
   @Override
-  public Iterable<String> keys(final Metadata carrier) {
-    List<String> keys = new ArrayList<>();
-
+  public void forEachKey(Metadata carrier, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
     for (String key : carrier.keys()) {
       if (!key.endsWith(Metadata.BINARY_HEADER_SUFFIX)) {
-        keys.add(key);
+        String lowerCaseKey = key.toLowerCase();
+        int classification = classifier.classify(lowerCaseKey);
+        if (classification != -1) {
+          consumer.accept(classification, lowerCaseKey,
+            carrier.get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER)));
+        }
       }
     }
-
-    return keys;
-  }
-
-  @Override
-  public String get(final Metadata carrier, final String key) {
-    return carrier.get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER));
   }
 }

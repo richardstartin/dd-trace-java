@@ -11,16 +11,19 @@ class MapSetter implements AgentPropagation.Setter<Map<String, String>> {
   }
 }
 
-class MapGetter implements AgentPropagation.Getter<Map<String, String>> {
+class MapGetter implements AgentPropagation.ContextVisitor<Map<String, String>> {
   static final INSTANCE = new MapGetter()
-  
-  @Override
-  Iterable<String> keys(Map<String, String> carrier) {
-    return carrier.keySet()
-  }
 
   @Override
-  String get(Map<String, String> carrier, String key) {
-    return carrier.get(key)
+  void forEachKey(Map<String, String> carrier,
+                  AgentPropagation.KeyClassifier classifier,
+                  AgentPropagation.KeyValueConsumer consumer) {
+    for (Map.Entry<String, String> entry : carrier.entrySet()) {
+      String lowerCaseKey = entry.getKey().toLowerCase()
+      int classification = classifier.classify(lowerCaseKey)
+      if (classification != -1) {
+        consumer.accept(classification, lowerCaseKey, entry.getValue())
+      }
+    }
   }
 }

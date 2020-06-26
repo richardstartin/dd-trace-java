@@ -14,11 +14,17 @@ public interface AgentPropagation {
     void set(C carrier, String key, String value);
   }
 
-  <C> AgentSpan.Context extract(C carrier, Getter<C> getter);
+  <C> AgentSpan.Context extract(C carrier, ContextVisitor<C> getter);
 
-  interface Getter<C> {
-    Iterable<String> keys(C carrier);
+  interface KeyClassifier {
+    int classify(String key);
+  }
 
-    String get(C carrier, String key);
+  interface KeyValueConsumer {
+    boolean accept(int classification, String lowerCaseKey, String value);
+  }
+
+  interface ContextVisitor<C> {
+    void forEachKey(C carrier, KeyClassifier classifier, KeyValueConsumer consumer);
   }
 }

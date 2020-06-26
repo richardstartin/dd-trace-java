@@ -1,31 +1,24 @@
 package datadog.trace.instrumentation.kafka_clients;
 
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 
-public class TextMapExtractAdapter implements AgentPropagation.Getter<Headers> {
+public class TextMapExtractAdapter implements AgentPropagation.ContextVisitor<Headers> {
 
   public static final TextMapExtractAdapter GETTER = new TextMapExtractAdapter();
 
   @Override
-  public Iterable<String> keys(final Headers headers) {
-    final List<String> keys = new ArrayList<>();
-    for (final Header header : headers) {
-      keys.add(header.key());
+  public void forEachKey(Headers carrier, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
+    for (Header header : carrier) {
+      String lowerCaseKey = header.key();
+      int classification = classifier.classify(lowerCaseKey);
+      if (classification != -1) {
+        byte[] value = header.value();
+        if (null != value) {
+          consumer.accept(classification, lowerCaseKey, new String(header.value()));
+        }
+      }
     }
-    return keys;
-  }
-
-  @Override
-  public String get(final Headers headers, final String key) {
-    final Header header = headers.lastHeader(key);
-    if (header == null) {
-      return null;
-    }
-    return new String(header.value(), StandardCharsets.UTF_8);
   }
 }

@@ -16,7 +16,7 @@ class OTPropagation {
     }
   }
 
-  static class TextMapExtractGetter implements AgentPropagation.Getter<TextMap> {
+  static class TextMapExtractGetter implements AgentPropagation.ContextVisitor<TextMap> {
     private final Map<String, String> extracted = new HashMap<>();
 
     TextMapExtractGetter(final TextMap carrier) {
@@ -26,15 +26,16 @@ class OTPropagation {
     }
 
     @Override
-    public Iterable<String> keys(final TextMap carrier) {
-      return extracted.keySet();
-    }
-
-    @Override
-    public String get(final TextMap carrier, final String key) {
+    public void forEachKey(TextMap carrier, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
       // This is the same as the one passed into the constructor
       // So using "extracted" is valid
-      return extracted.get(key);
+      for (Map.Entry<String, String> entry : extracted.entrySet()) {
+        String lowerCaseKey = entry.getKey().toLowerCase();
+        int classification = classifier.classify(lowerCaseKey);
+        if (classification != -1) {
+          consumer.accept(classification, lowerCaseKey, entry.getValue());
+        }
+      }
     }
   }
 }

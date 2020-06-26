@@ -252,7 +252,7 @@ class OpenTelemetryTest extends AgentTestRunner {
     ]
 
     when:
-    def extractedContext = httpPropagator.extract(context, textMap, new TextMapGetter())
+    def extractedContext = httpPropagator.extract(context, textMap, new TextMapContextVisitor())
     def extract = TracingContextUtils.getSpanWithoutDefault(extractedContext)
 
     then:
@@ -272,7 +272,7 @@ class OpenTelemetryTest extends AgentTestRunner {
     PrioritySampling.USER_DROP    | PrioritySampling.USER_DROP
   }
 
-  static class TextMapGetter implements HttpTextFormat.Getter<Map<String, String>> {
+  static class TextMapContextVisitor implements HttpTextFormat.Getter<Map<String, String>> {
     @Override
     String get(Map<String, String> carrier, String key) {
       return carrier.get(key)

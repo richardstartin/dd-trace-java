@@ -5,28 +5,25 @@ import java.util.ArrayList;
 import java.util.List;
 import play.api.mvc.Headers;
 import scala.Option;
+import scala.Tuple2;
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
 
-public class PlayHeaders implements AgentPropagation.Getter<Headers> {
+public class PlayHeaders implements AgentPropagation.ContextVisitor<Headers> {
 
   public static final PlayHeaders GETTER = new PlayHeaders();
 
   @Override
-  public Iterable<String> keys(final Headers headers) {
-    final List<String> javaList = new ArrayList<>();
-    final scala.collection.Iterator<String> scalaIterator = headers.keys().iterator();
-    while (scalaIterator.hasNext()) {
-      javaList.add(scalaIterator.next());
-    }
-    return javaList;
-  }
-
-  @Override
-  public String get(final Headers headers, final String key) {
-    final Option<String> option = headers.get(key);
-    if (option.isDefined()) {
-      return option.get();
-    } else {
-      return null;
+  public void forEachKey(Headers carrier, AgentPropagation.KeyClassifier classifier, AgentPropagation.KeyValueConsumer consumer) {
+    for (String entry : JavaConversions.asJavaIterable(carrier.keys())) {
+      String lowerCaseKey = entry.toLowerCase();
+      int classification = classifier.classify(lowerCaseKey);
+      if (classification != -1) {
+        Option<String> value = carrier.get(entry);
+        if (value.nonEmpty()) {
+          consumer.accept(classification, lowerCaseKey, value.get());
+        }
+      }
     }
   }
 }

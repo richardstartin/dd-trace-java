@@ -63,19 +63,19 @@ public class OtelContextPropagators implements ContextPropagators {
     }
   }
 
-  private static class OtelGetter<C> implements AgentPropagation.Getter<C> {
+  private static class OtelGetter<C> implements AgentPropagation.ContextVisitor<C> {
     private static final String DD_TRACE_ID_KEY = "x-datadog-trace-id";
     private static final String DD_SPAN_ID_KEY = "x-datadog-parent-id";
     private static final String DD_SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
     private static final String DD_ORIGIN_KEY = "x-datadog-origin";
 
-    private static final String B3_TRACE_ID_KEY = "X-B3-TraceId";
-    private static final String B3_SPAN_ID_KEY = "X-B3-SpanId";
-    private static final String B3_SAMPLING_PRIORITY_KEY = "X-B3-Sampled";
+    private static final String B3_TRACE_ID_KEY = "X-B3-TraceId".toLowerCase();
+    private static final String B3_SPAN_ID_KEY = "X-B3-SpanId".toLowerCase();
+    private static final String B3_SAMPLING_PRIORITY_KEY = "X-B3-Sampled".toLowerCase();
 
-    private static final String HAYSTACK_TRACE_ID_KEY = "Trace-ID";
-    private static final String HAYSTACK_SPAN_ID_KEY = "Span-ID";
-    private static final String HAYSTACK_PARENT_ID_KEY = "Parent_ID";
+    private static final String HAYSTACK_TRACE_ID_KEY = "Trace-ID".toLowerCase();
+    private static final String HAYSTACK_SPAN_ID_KEY = "Span-ID".toLowerCase();
+    private static final String HAYSTACK_PARENT_ID_KEY = "Parent_ID".toLowerCase();
 
     private static final List<String> KEYS =
         Arrays.asList(
@@ -97,15 +97,15 @@ public class OtelContextPropagators implements ContextPropagators {
     }
 
     @Override
-    public Iterable<String> keys(final C carrier) {
-      // TODO: Otel doesn't expose the keys, so we have to rely on hard coded keys.
-      // https://github.com/open-telemetry/opentelemetry-specification/issues/433
-      return KEYS;
-    }
-
-    @Override
-    public String get(final C carrier, final String key) {
-      return getter.get(carrier, key);
+    public void forEachKey(C carrier,
+                           AgentPropagation.KeyClassifier classifier,
+                           AgentPropagation.KeyValueConsumer consumer) {
+      for (String key : KEYS) {
+        int classification = classifier.classify(key);
+        if (-1 != classification) {
+          consumer.accept(classification, key, getter.get(carrier, key));
+        }
+      }
     }
   }
 }

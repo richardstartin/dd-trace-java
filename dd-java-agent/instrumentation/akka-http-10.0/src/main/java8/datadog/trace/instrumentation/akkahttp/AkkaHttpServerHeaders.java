@@ -3,30 +3,22 @@ package datadog.trace.instrumentation.akkahttp;
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.scaladsl.model.HttpRequest;
 import datadog.trace.bootstrap.instrumentation.api.AgentPropagation;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
-public class AkkaHttpServerHeaders implements AgentPropagation.Getter<HttpRequest> {
+public class AkkaHttpServerHeaders implements AgentPropagation.ContextVisitor<HttpRequest> {
 
   public static final AkkaHttpServerHeaders GETTER = new AkkaHttpServerHeaders();
 
   @Override
-  public List<String> keys(final HttpRequest carrier) {
-    final List<String> keys = new ArrayList<>();
+  public void forEachKey(final HttpRequest carrier,
+                         final AgentPropagation.KeyClassifier classifier,
+                         final AgentPropagation.KeyValueConsumer consumer) {
     for (final HttpHeader header : carrier.getHeaders()) {
-      keys.add(header.name());
+      String name = header.lowercaseName();
+      int classification = classifier.classify(name);
+      if (classification != -1) {
+        consumer.accept(classification, name, header.value());
+      }
     }
-    return keys;
   }
 
-  @Override
-  public String get(final HttpRequest carrier, final String key) {
-    final Optional<HttpHeader> header = carrier.getHeader(key);
-    if (header.isPresent()) {
-      return header.get().value();
-    } else {
-      return null;
-    }
-  }
 }
