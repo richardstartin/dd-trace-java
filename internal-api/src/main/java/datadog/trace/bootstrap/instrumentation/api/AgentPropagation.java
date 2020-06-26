@@ -18,6 +18,7 @@ public interface AgentPropagation {
 
   interface KeyClassifier {
     int IGNORE = -1;
+
     int classify(String key);
   }
 
