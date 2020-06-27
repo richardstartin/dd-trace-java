@@ -28,5 +28,20 @@ public class HttpServletRequestExtractAdapter extends CachingContextVisitor<Http
         }
       }
     }
+    // TODO collapse these into one method with a lambda when JDK7 is dropped
+    Enumeration<String> attributeNames = carrier.getAttributeNames();
+    while (attributeNames.hasMoreElements()) {
+      String attribute = attributeNames.nextElement();
+      String lowerCaseKey = toLowerCase(attribute);
+      int classification = classifier.classify(lowerCaseKey);
+      if (classification != IGNORE) {
+        Object value = carrier.getAttribute(attribute);
+        if (value instanceof String) {
+          if (!consumer.accept(classification, lowerCaseKey, (String) value)) {
+            return;
+          }
+        }
+      }
+    }
   }
 }
